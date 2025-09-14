@@ -1,0 +1,5 @@
+{
+  "name": "ChromaMix: Guía de Color para Artistas",
+  "description": "Una aplicación para pintores que proporciona un círculo cromático interactivo para explorar armonías de color y genera instrucciones de mezcla de pintura utilizando la API de Gemini para obtener cualquier color a partir de colores primarios.",
+  "requestFramePermissions": []
+}
