@@ -47,6 +47,9 @@ const ColorWheel: React.FC<ColorWheelProps> = ({ onColorSelect, selectedColor })
   const handleColorClick = (color: Color) => {
     onColorSelect(color);
     setSplash({ key: Date.now(), color: color.hex });
+    if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50); // Haptic feedback for selection
+    }
   };
 
   const harmonyHues = useMemo(() => {
@@ -73,20 +76,33 @@ const ColorWheel: React.FC<ColorWheelProps> = ({ onColorSelect, selectedColor })
         <style>{`
             @keyframes paint-splash {
               from {
-                transform: scale(0.3);
-                opacity: 0.8;
+                transform: scale(0.2);
+                opacity: 1;
               }
               to {
-                transform: scale(1.6);
+                transform: scale(2.5);
                 opacity: 0;
               }
             }
             .animate-paint-splash {
               transform-origin: center;
-              animation: paint-splash 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+              animation: paint-splash 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+            @keyframes text-fade-in {
+              from {
+                opacity: 0;
+                transform: translateY(5px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            .animate-text-fade-in {
+                animation: text-fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             }
         `}</style>
-        <svg width="100%" height="100%" viewBox="0 0 300 300">
+        <svg width="100%" height="100%" viewBox="0 0 300 300" style={{ overflow: 'visible' }}>
             <g transform={`translate(0, 0)`}>
                 {COLORS.map((color, index) => {
                     const startAngle = index * sliceAngle;
@@ -131,38 +147,48 @@ const ColorWheel: React.FC<ColorWheelProps> = ({ onColorSelect, selectedColor })
                 <path
                   fill={splash.color}
                   d="M-3.1,-38.5C-1.1,-48.5,9.6,-53.4,20.1,-51.2C30.6,-49,41,-39.6,44.9,-28.9C48.8,-18.2,46.2,-6.2,42.5,4.3C38.8,14.7,34.1,23.6,26.9,31.2C19.7,38.8,10.1,45.2,-0.9,46.5C-11.9,47.8,-24.4,44,-33.5,36.5C-42.6,29,-48.4,17.8,-50,-0.1C-51.6,-18,-49,-39.1,-39,-46.8C-29,-54.5,-11.6,-48.8,-3.1,-38.5Z"
-                  transform="scale(0.8)"
+                  transform="scale(1.1)"
                 />
               </g>
             )}
-            <circle
-                cx={center}
-                cy={center}
-                r={radius / 2.2}
-                fill={activeColor ? activeColor.hex : 'white'}
-                className={`stroke-gray-200 dark:stroke-slate-700 transition-colors duration-300 ${!activeColor && 'fill-white dark:fill-slate-800'}`}
-                strokeWidth="4"
-            />
-             <text
-                x={center}
-                y={center - 5}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="text-lg font-semibold fill-gray-700 pointer-events-none"
-                style={{ mixBlendMode: 'difference', fill: '#ffffff' }}
-              >
-                {activeColor ? activeColor.name : 'Color'}
-              </text>
-              <text
-                x={center}
-                y={center + 18}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="text-xs tracking-wider fill-gray-500 pointer-events-none"
-                style={{ mixBlendMode: 'difference', fill: '#ffffff' }}
-              >
-                {activeColor ? activeColor.hex : 'Selecciona'}
-              </text>
+            <g 
+                style={{
+                    transformOrigin: '150px 150px',
+                    transform: selectedColor ? 'scale(1.05)' : 'scale(1)',
+                    transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+            >
+                <circle
+                    cx={center}
+                    cy={center}
+                    r={radius / 2.2}
+                    fill={activeColor ? activeColor.hex : 'white'}
+                    className={`stroke-gray-200 dark:stroke-slate-700 transition-colors duration-300 ${!activeColor && 'fill-white dark:fill-slate-800'}`}
+                    strokeWidth="4"
+                />
+                 <g key={activeColor ? activeColor.hex : 'empty'} className="animate-text-fade-in">
+                    <text
+                        x={center}
+                        y={center - 5}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="text-lg font-semibold pointer-events-none"
+                        style={{ mixBlendMode: 'difference', fill: '#ffffff' }}
+                      >
+                        {activeColor ? activeColor.name : 'Color'}
+                      </text>
+                      <text
+                        x={center}
+                        y={center + 18}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="text-xs tracking-wider pointer-events-none"
+                        style={{ mixBlendMode: 'difference', fill: '#ffffff' }}
+                      >
+                        {activeColor ? activeColor.hex : 'Selecciona'}
+                      </text>
+                 </g>
+            </g>
         </svg>
     </div>
   );

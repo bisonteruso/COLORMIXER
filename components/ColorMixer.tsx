@@ -16,27 +16,48 @@ const ColorInfo: React.FC<{ label: string, color: string }> = ({ label, color })
 
 const RecipeSkeleton = () => (
     <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg animate-pulse">
-        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-4"></div>
-        <div className="space-y-4">
-            <div>
-                <div className="flex justify-between items-center mb-2">
-                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/6"></div>
+        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+        <div className="flex flex-wrap items-start gap-6">
+            <div className="flex-grow space-y-4 min-w-[150px]">
+                {/* Recipe Item 1 */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="h-4 bg-gray-300 dark:bg-slate-600 rounded w-1/3"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-slate-600 rounded w-1/5"></div>
+                    </div>
+                    <div className="flex gap-1.5">
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                    </div>
                 </div>
-                <div className="flex gap-1.5">
-                    <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
-                    <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
-                    <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                {/* Recipe Item 2 */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="h-4 bg-gray-300 dark:bg-slate-600 rounded w-1/4"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-slate-600 rounded w-1/6"></div>
+                    </div>
+                    <div className="flex gap-1.5">
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                    </div>
+                </div>
+                {/* Recipe Item 3 */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="h-4 bg-gray-300 dark:bg-slate-600 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-300 dark:bg-slate-600 rounded w-1/5"></div>
+                    </div>
+                    <div className="flex gap-1.5">
+                        <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+                    </div>
                 </div>
             </div>
-            <div>
-                <div className="flex justify-between items-center mb-2">
-                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/6"></div>
-                </div>
-                <div className="flex gap-1.5">
-                    <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
-                    <div className="w-6 h-6 bg-gray-300 dark:bg-slate-600 rounded-md"></div>
+            {/* Result placeholder */}
+            <div className="flex-shrink-0 mx-auto">
+                <div className="mt-2">
+                    <div className="h-4 bg-gray-300 dark:bg-slate-600 rounded w-20 mb-2 mx-auto"></div>
+                    <div className="w-[80px] h-[80px] bg-gray-300 dark:bg-slate-600 rounded-lg"></div>
                 </div>
             </div>
         </div>
@@ -60,11 +81,12 @@ const ColorMixer: React.FC<ColorMixerProps> = ({ selectedColor }) => {
     ];
 
     useEffect(() => {
-        let intervalId: NodeJS.Timeout | undefined;
+        // FIX: In a browser environment, setInterval returns a number, not NodeJS.Timeout.
+        let intervalId: number | undefined;
         if (isLoading) {
             let messageIndex = 0;
             setLoadingMessage(loadingMessages[messageIndex]);
-            intervalId = setInterval(() => {
+            intervalId = window.setInterval(() => {
                 messageIndex = (messageIndex + 1) % loadingMessages.length;
                 setLoadingMessage(loadingMessages[messageIndex]);
             }, 2200);
@@ -98,6 +120,9 @@ const ColorMixer: React.FC<ColorMixerProps> = ({ selectedColor }) => {
             const instructionsJson = await getMixingInstructions(selectedColor.hex);
             const instructions = JSON.parse(instructionsJson);
             setMixingInstructions(instructions);
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate([100, 30, 100]); // Haptic feedback for success
+            }
         } catch (err) {
             console.error(err);
             if (err instanceof SyntaxError) {
@@ -201,7 +226,14 @@ const ColorMixer: React.FC<ColorMixerProps> = ({ selectedColor }) => {
                             {mixingInstructions.map((step, index) => (
                               <div key={index}>
                                 <div className="flex justify-between items-center mb-1">
-                                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{step.colorName}</span>
+                                   <div className="flex items-center gap-2">
+                                       <div 
+                                          className="w-4 h-4 rounded-full border border-gray-300 dark:border-slate-600"
+                                          style={{ backgroundColor: step.colorHex }}
+                                          aria-hidden="true"
+                                       ></div>
+                                       <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{step.colorName}</span>
+                                   </div>
                                    <span className="text-xs text-gray-500 dark:text-gray-400">{step.parts} parte(s)</span>
                                 </div>
                                 <div className="flex gap-1.5 flex-wrap">

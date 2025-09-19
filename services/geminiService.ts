@@ -25,15 +25,53 @@ const schema = {
 
 
 /**
- * Generates color mixing instructions using the Gemini API.
+ * Generates color mixing instructions using the Gemini API, with local caching.
  * @param color The target color in hex format (e.g., "#FF5733").
  * @returns A promise that resolves to a string with mixing instructions.
  */
 export async function getMixingInstructions(color: string): Promise<string> {
   const apiKey = process.env.API_KEY;
+
+  // 1. If no API Key, return mock data immediately. This prevents the app from crashing.
   if (!apiKey) {
-      throw new Error("La clave API de Gemini no está configurada. Por favor, asegúrate de que la variable de entorno API_KEY esté correctamente establecida.");
+      console.warn(`
+        ************************************************************************************************
+        ** ADVERTENCIA: La clave API de Gemini no está configurada.                                     **
+        **                                                                                            **
+        ** La aplicación está utilizando datos de demostración para la guía de mezcla.                 **
+        ** Para obtener resultados reales, configura la variable de entorno API_KEY en tu entorno.    **
+        ************************************************************************************************
+      `);
+      // Return mock data after a short delay to simulate a network request
+      return new Promise(resolve => {
+        setTimeout(() => {
+          const mockRecipe = [
+            { colorName: 'Rojo', colorHex: '#FF0000', parts: 1 },
+            { colorName: 'Amarillo', colorHex: '#FFFF00', parts: 2 },
+            { colorName: 'Blanco', colorHex: '#FFFFFF', parts: 1 },
+          ];
+          resolve(JSON.stringify(mockRecipe));
+        }, 800);
+      });
   }
+  
+  // 2. API Key exists, proceed with caching and fetching logic.
+  const cacheKey = 'chromamix_recipes_cache';
+
+  try {
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      const cache = JSON.parse(cachedData);
+      if (cache[color]) {
+        console.log(`Cache hit for ${color}. Returning cached data.`);
+        return Promise.resolve(cache[color]);
+      }
+    }
+  } catch (e) {
+    console.warn("Could not read from cache:", e);
+  }
+
+  console.log(`Cache miss for ${color}. Fetching from API.`);
   const ai = new GoogleGenAI({ apiKey });
   const model = 'gemini-2.5-flash';
 
@@ -61,11 +99,30 @@ export async function getMixingInstructions(color: string): Promise<string> {
       }
     });
     
-    return response.text;
+    const instructions = response.text;
+
+    // Save the new data to cache
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      const cache = cachedData ? JSON.parse(cachedData) : {};
+      cache[color] = instructions;
+      localStorage.setItem(cacheKey, JSON.stringify(cache));
+      console.log(`Saved new recipe for ${color} to cache.`);
+    } catch (e) {
+      console.warn("Could not save to cache:", e);
+    }
+
+    return instructions;
 
   } catch (error) {
     console.error("Error fetching mixing instructions from Gemini API:", error);
-    // Rethrow the error to be handled by the component that called this service.
-    throw error;
+    if (error instanceof Error) {
+        // Intercept specific, common API errors and re-throw with a user-friendly message.
+        if (error.message.includes('PERMISSION_DENIED') || error.message.includes('API key not valid')) {
+            throw new Error('Error de Permiso: Tu clave de API no es válida o no tiene los permisos necesarios. Por favor, verifica tu configuración.');
+        }
+    }
+    // For other errors, or if it's not an Error instance, re-throw a generic message.
+    throw new Error('No se pudo generar la receta. La API devolvió un error inesperado.');
   }
 }
